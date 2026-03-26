@@ -51,7 +51,7 @@ description = "Git branch when working tree is clean"
 command = "git symbolic-ref --short HEAD 2>/dev/null || git rev-parse --short HEAD 2>/dev/null"
 when = "git rev-parse --git-dir > /dev/null 2>&1 && git diff --quiet 2>/dev/null && git diff --cached --quiet 2>/dev/null && [ -z \"$(git ls-files --others --exclude-standard 2>/dev/null)\" ]"
 shell = ["bash", "--noprofile", "--norc"]
-command_timeout = 10000
+timeout = 10000
 style = "green"
 format = '[\[](bright_black)[$output]($style)[\]](bright_black)'
 
@@ -61,7 +61,7 @@ description = "Git branch when working tree has changes"
 command = "git symbolic-ref --short HEAD 2>/dev/null || git rev-parse --short HEAD 2>/dev/null"
 when = "git rev-parse --git-dir > /dev/null 2>&1 && ! { git diff --quiet 2>/dev/null && git diff --cached --quiet 2>/dev/null && [ -z \"$(git ls-files --others --exclude-standard 2>/dev/null)\" ]; }"
 shell = ["bash", "--noprofile", "--norc"]
-command_timeout = 10000
+timeout = 10000
 style = "red"
 format = '[\[](bright_black)[$output]($style)[\]](bright_black)'
 
