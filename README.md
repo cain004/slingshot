@@ -113,3 +113,16 @@ cd ~/.slingshot && git pull
 ```
 
 Or just re-run the install command.
+
+## SSH from Ghostty
+
+If you use [Ghostty](https://ghostty.org/) locally on macOS and SSH into Linux machines, you may see `?????` instead of arrows and have broken backspace/delete keys. This happens because Ghostty reports itself as `xterm-ghostty`, which most Linux servers don't recognize.
+
+**Fix:** Add to `~/.ssh/config` on your Mac:
+
+```ssh
+Host *
+    SetEnv TERM=xterm-256color
+```
+
+This makes SSH sessions use the standard `xterm-256color` terminfo while preserving Ghostty's native features for local use.
