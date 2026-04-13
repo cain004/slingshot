@@ -47,17 +47,25 @@ info "Detected OS: $OS"
 # ----------------------------------------------------------------------------
 if [ "$OS" = "linux" ]; then
   NEEDS_UPDATE=0
+  apt_install() {
+    if [ "$NEEDS_UPDATE" -eq 0 ]; then
+      info "Updating package list..."
+      $SUDO apt-get update -qq
+      NEEDS_UPDATE=1
+    fi
+    info "Installing $1..."
+    $SUDO apt-get install -y -qq "$1"
+  }
   for cmd in git zsh tmux tree nvim; do
     if ! command -v "$cmd" >/dev/null 2>&1; then
-      if [ "$NEEDS_UPDATE" -eq 0 ]; then
-        info "Updating package list..."
-        $SUDO apt-get update -qq
-        NEEDS_UPDATE=1
-      fi
       pkg="$cmd"
       [ "$cmd" = "nvim" ] && pkg="neovim"
-      info "Installing $pkg..."
-      $SUDO apt-get install -y -qq "$pkg"
+      apt_install "$pkg"
+    fi
+  done
+  for pkg in zsh-autosuggestions zsh-syntax-highlighting; do
+    if [ ! -f "/usr/share/$pkg/$pkg.zsh" ]; then
+      apt_install "$pkg"
     fi
   done
 else
@@ -65,17 +73,22 @@ else
     error "git not found. Install Xcode CLI tools: xcode-select --install"
   fi
   if command -v brew >/dev/null 2>&1; then
+    BREW_PREFIX="$(brew --prefix)"
     for cmd in nvim tmux tree; do
       if ! command -v "$cmd" >/dev/null 2>&1; then
         info "Installing $cmd..."
         brew install "$cmd"
       fi
     done
-  else
-    for cmd in nvim tmux tree; do
-      if ! command -v "$cmd" >/dev/null 2>&1; then
-        warn "$cmd not found. Install it with: brew install $cmd"
+    for pkg in zsh-autosuggestions zsh-syntax-highlighting; do
+      if [ ! -f "$BREW_PREFIX/share/$pkg/$pkg.zsh" ]; then
+        info "Installing $pkg..."
+        brew install "$pkg"
       fi
+    done
+  else
+    for cmd in nvim tmux tree zsh-autosuggestions zsh-syntax-highlighting; do
+      warn "brew not found. Install missing deps with: brew install $cmd"
     done
   fi
 fi

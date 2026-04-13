@@ -60,6 +60,23 @@ bindkey "^[[1;3C" forward-word                             # Option+Right
 bindkey "^[[1;3D" backward-word                            # Option+Left
 
 # ----------------------------------------------------------------------------
+# Plugins — autosuggestions and syntax highlighting
+# (install: brew install zsh-autosuggestions zsh-syntax-highlighting
+#           apt install zsh-autosuggestions zsh-syntax-highlighting)
+# syntax-highlighting must be sourced after autosuggestions.
+# ----------------------------------------------------------------------------
+for _plugin in zsh-autosuggestions/zsh-autosuggestions.zsh \
+               zsh-syntax-highlighting/zsh-syntax-highlighting.zsh; do
+  for _prefix in /opt/homebrew/share /usr/share /home/linuxbrew/.linuxbrew/share; do
+    if [ -f "$_prefix/$_plugin" ]; then
+      source "$_prefix/$_plugin"
+      break
+    fi
+  done
+done
+unset _plugin _prefix
+
+# ----------------------------------------------------------------------------
 # Terminal title
 # ----------------------------------------------------------------------------
 DISABLE_AUTO_TITLE="true"
