@@ -62,8 +62,11 @@ bindkey "${terminfo[kcuu1]}" up-line-or-beginning-search   # Up arrow (applicati
 bindkey "${terminfo[kcud1]}" down-line-or-beginning-search # Down arrow (application mode)
 bindkey "^[[A" up-line-or-beginning-search                 # Up arrow (normal mode)
 bindkey "^[[B" down-line-or-beginning-search               # Down arrow (normal mode)
-bindkey "^[[1;3C" forward-word                             # Option+Right
-bindkey "^[[1;3D" backward-word                            # Option+Left
+bindkey -e                                                 # force emacs keymap (overrides $EDITOR=nvim auto-vi-mode)
+bindkey "^[b" backward-word                                # Option+Left  (iTerm2 "Esc+" mode)
+bindkey "^[f" forward-word                                 # Option+Right (iTerm2 "Esc+" mode)
+bindkey "^[[1;3D" backward-word                            # Option+Left  (xterm-style)
+bindkey "^[[1;3C" forward-word                             # Option+Right (xterm-style)
 
 # ----------------------------------------------------------------------------
 # Plugins — autosuggestions and syntax highlighting
