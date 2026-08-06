@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Portable shell configuration for macOS (zsh) and Linux (bash/zsh) with Starship prompt. Dotfiles are symlinked from `~/.slingshot` into `~/` by `install.sh`.
 
-**Terminal Workflow (macOS)**: Primary terminal is cmux with native workspace/window/pane management using bundled Ghostty. Ghostty config is included for standalone use. Tmux remains configured for Linux environments.
+**Terminal Workflow**: The maintainer uses iTerm2 + tmux on macOS, and tmux on Linux. `.tmux.conf` applies on both platforms — treat it as primary, not Linux-only. `ghostty/config` and the cmux aliases in `.aliases` are unused leftovers kept for portability.
 
 ## Architecture
 
