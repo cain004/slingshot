@@ -23,8 +23,22 @@ The install script will:
 3. Install **Starship** prompt
 4. Clone this repo to `~/.slingshot`
 5. Back up existing dotfiles to `.bak`
-6. Symlink dotfiles from the repo into `~/` and `~/.config/`
-7. Set zsh as the default shell (Linux only, if not already zsh)
+6. Write small stub files for `~/.zshrc`, `~/.bashrc`, and `~/.gitconfig` that load the repo versions
+7. Symlink the remaining dotfiles from the repo into `~/` and `~/.config/`
+8. Set zsh as the default shell (Linux only, if not already zsh)
+
+### Why stubs instead of symlinks?
+
+Many CLI installers append lines straight to `~/.zshrc`, `~/.bashrc`, or (via `git config --global`) `~/.gitconfig`. If those were symlinks, the edits would land in the repo and dirty it. Instead, each is a machine-local file that sources the tracked config:
+
+```zsh
+source "$HOME/.slingshot/.zshrc"
+# ...anything installers append ends up down here, untracked
+```
+
+Check `cat ~/.zshrc` now and then and move anything worth keeping into the repo.
+
+**Upgrading from a symlinked install:** re-run the installer. Lines that tools appended to the tracked files are moved into the new stubs, the tracked files are restored, and the full diff is saved to `~/.<file>.slingshot-migrate.patch`.
 
 ## Files
 
@@ -37,11 +51,11 @@ The install script will:
 | `.gitconfig` | Git defaults — editor, default branch, pull strategy |
 | `starship.toml` | Starship prompt — Slingshot theme with git status and SSH detection |
 | `install.sh` | One-line installer |
-| `uninstall.sh` | Removes symlinks and restores backups |
+| `uninstall.sh` | Removes symlinks and stubs, restores backups |
 
 ## Local overrides
 
-Machine-specific settings go in local files that are sourced but not tracked:
+Machine-specific settings go in local files that are sourced but not tracked. The stubs (`~/.zshrc`, `~/.bashrc`, `~/.gitconfig`) are also untracked, so `git config --global` writes and installer-added lines stay local automatically.
 
 | File | Purpose |
 |---|---|
@@ -102,11 +116,11 @@ Both `.bashrc` and `.zshrc` set `DISABLE_AUTO_TITLE="true"` to prevent framework
 sh ~/.slingshot/uninstall.sh
 ```
 
-This removes all symlinks, restores any `.bak` backups, and optionally deletes `~/.slingshot`.
+This removes all symlinks and stubs, restores any `.bak` backups, and optionally deletes `~/.slingshot`. Stubs containing lines added by other tools are kept as `~/.<file>.slingshot-stub` so nothing is lost.
 
 ## Updating
 
-Since the dotfiles are symlinked, pulling the repo updates everything:
+Since the dotfiles are symlinked or loaded via stubs, pulling the repo updates everything:
 
 ```sh
 cd ~/.slingshot && git pull

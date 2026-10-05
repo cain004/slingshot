@@ -1,7 +1,7 @@
 #!/bin/sh
 set -e
 
-VERSION="2.1.0"
+VERSION="2.2.0"
 REPO="https://github.com/cain004/slingshot.git"
 INSTALL_DIR="$HOME/.slingshot"
 OLD_INSTALL_DIR="$HOME/.shell-config"
@@ -18,6 +18,61 @@ backup() {
     warn "Backing up $1 -> $1.bak"
     cp "$1" "$1.bak"
   fi
+}
+
+# Pre-2.2 installs symlinked rc files into the repo, so installers that
+# appended to them dirtied the tracked copy. Save those added lines so they
+# can move into the new stub, then restore the tracked file.
+rescue_appends() {
+  name="$1"
+  target="$HOME/$name"
+  [ -L "$target" ] || return 0
+  case "$(readlink "$target")" in
+    "$INSTALL_DIR/$name"|"$OLD_INSTALL_DIR/$name") ;;
+    *) return 0 ;;
+  esac
+  git -C "$INSTALL_DIR" diff --quiet -- "$name" && return 0
+
+  warn "Found local edits in tracked $name — moving them to $target"
+  git -C "$INSTALL_DIR" diff -- "$name" > "$HOME/$name.slingshot-migrate.patch"
+  git -C "$INSTALL_DIR" diff -U0 -- "$name" \
+    | grep '^+' | grep -v '^+++ ' | sed 's/^+//' > "$RESCUE_DIR/$name"
+  git -C "$INSTALL_DIR" checkout --quiet -- "$name"
+  info "Full diff saved to $HOME/$name.slingshot-migrate.patch"
+}
+
+# Write a machine-local stub that loads the tracked file. Tools that append
+# to ~/.zshrc etc. then write here instead of into the repo.
+install_stub() {
+  name="$1"
+  load_line="$2"
+  load_text="${3:-$2}"
+  target="$HOME/$name"
+
+  if [ -L "$target" ]; then
+    rm "$target"
+  elif [ -f "$target" ]; then
+    if grep -qF "$load_line" "$target"; then
+      info "Stub $name already in place"
+      return 0
+    fi
+    backup "$target"
+  fi
+
+  {
+    echo "# ============================================================================"
+    echo "# Slingshot stub — machine-local, not tracked"
+    echo "# ============================================================================"
+    echo "# Loads the shared config from the slingshot repo. Lines that installers"
+    echo "# append below stay on this machine; move keepers into the repo."
+    printf '%s\n' "$load_text"
+  } > "$target"
+
+  if [ -s "$RESCUE_DIR/$name" ]; then
+    echo "" >> "$target"
+    cat "$RESCUE_DIR/$name" >> "$target"
+  fi
+  info "Wrote stub $name"
 }
 
 # Use sudo only if not root
@@ -168,7 +223,13 @@ if [ -d "$OLD_INSTALL_DIR" ] && [ ! -d "$INSTALL_DIR" ]; then
   git -C "$INSTALL_DIR" remote set-url origin "$REPO"
 fi
 
+RESCUE_DIR="$(mktemp -d)"
+trap 'rm -rf "$RESCUE_DIR"' EXIT
+
 if [ -d "$INSTALL_DIR" ]; then
+  for name in .zshrc .bashrc .gitconfig; do
+    rescue_appends "$name"
+  done
   info "Updating slingshot..."
   git -C "$INSTALL_DIR" pull --quiet
 else
@@ -187,21 +248,17 @@ info "Linked .aliases"
 
 CURRENT_SHELL="$(basename "$SHELL")"
 
-backup "$HOME/.zshrc"
-ln -sf "$INSTALL_DIR/.zshrc" "$HOME/.zshrc"
-info "Linked .zshrc"
-
-backup "$HOME/.bashrc"
-ln -sf "$INSTALL_DIR/.bashrc" "$HOME/.bashrc"
-info "Linked .bashrc"
-
 backup "$HOME/.tmux.conf"
 ln -sf "$INSTALL_DIR/.tmux.conf" "$HOME/.tmux.conf"
 info "Linked .tmux.conf"
 
-backup "$HOME/.gitconfig"
-ln -sf "$INSTALL_DIR/.gitconfig" "$HOME/.gitconfig"
-info "Linked .gitconfig"
+# ----------------------------------------------------------------------------
+# Stub files (tools write to these, so they must not point into the repo)
+# ----------------------------------------------------------------------------
+install_stub .zshrc "source \"$INSTALL_DIR/.zshrc\""
+install_stub .bashrc "source \"$INSTALL_DIR/.bashrc\""
+install_stub .gitconfig "path = $INSTALL_DIR/.gitconfig" \
+  "$(printf '[include]\n    path = %s' "$INSTALL_DIR/.gitconfig")"
 
 mkdir -p "$HOME/.config"
 backup "$HOME/.config/starship.toml"
